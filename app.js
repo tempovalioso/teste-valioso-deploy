@@ -7,8 +7,14 @@ const path = require('path');
 
 const app = express();
 
-// Middleware para habilitar CORS e permitir JSON no corpo das requisições
-app.use(cors());
+// Configuração mais específica do CORS
+app.use(cors({
+    origin: ['https://tempovalioso3.netlify.app', 'http://localhost:3000', 'http://127.0.0.1:5500'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
+
 app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -17,12 +23,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/usuariosPontos', usuariosPontosRoutes);
 
-app.use('/', (req, res) =>{
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Middleware para tratar erros de CORS
+app.use((err, req, res, next) => {
+    if (err.name === 'UnauthorizedError') {
+        res.status(401).json({ error: 'Requisição não autorizada' });
+    } else {
+        next(err);
+    }
+});
+
+app.use('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Iniciando o servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
