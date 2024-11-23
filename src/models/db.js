@@ -1,5 +1,5 @@
 // src/models/db.js
-const mysql = require('mysql2');
+const mysql =     ('mysql2');
 
 // Configurando a conexão com o banco de dados MySQL
 const pool = mysql.createPool({
