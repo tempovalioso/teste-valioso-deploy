@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const usuariosRoutes = require('./src/routes/usuariosRoutes');
@@ -7,36 +6,41 @@ const path = require('path');
 
 const app = express();
 
-// Configuração mais específica do CORS
+// Configuração CORS atualizada
 app.use(cors({
     origin: ['https://tempovalioso3.netlify.app', 'http://localhost:3000', 'http://127.0.0.1:5500'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    credentials: false,
+    maxAge: 3600
 }));
 
-app.use(express.json());
+// Middleware para preflight requests
+app.options('*', cors());
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Usando as rotas para usuarios
+// Middleware para logging
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
+// Rotas
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/usuariosPontos', usuariosPontosRoutes);
 
-// Middleware para tratar erros de CORS
+// Error handling middleware
 app.use((err, req, res, next) => {
-    if (err.name === 'UnauthorizedError') {
-        res.status(401).json({ error: 'Requisição não autorizada' });
-    } else {
-        next(err);
-    }
+    console.error(err.stack);
+    res.status(500).json({
+        message: 'Algo deu errado!',
+        error: process.env.NODE_ENV === 'development' ? err : {}
+    });
 });
 
-app.use('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Iniciando o servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);

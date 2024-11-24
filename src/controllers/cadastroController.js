@@ -1,31 +1,42 @@
 const db = require('../models/db');
 
 exports.createUsuario = async (req, res) => {
-  const { usuario, email, senha } = req.body;
+    const { usuario, email, senha } = req.body;
 
-  try {
-    const [resultConsulta] = await db.execute('Select * From usuarios WHERE email = ?', [email]);
-    if (resultConsulta.length == 0){
-      const [result] = await db.execute('INSERT INTO usuarios (usuario, email, senha) VALUES (?, ?, ?)', [usuario, email, senha]);
-      res.status(201).json({ message: 'Usuário Cadastrado!', id: result.insertId });
+    if (!usuario || !email || !senha) {
+        return res.status(400).json({ 
+            message: 'Todos os campos são obrigatórios' 
+        });
     }
-    else{
-      res.status(404).json({ message: 'Usuário já cadastrado!', id: resultConsulta.id });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Erro ao cadastrar usuário', error });
-  }
-};
 
-exports.consultarUsuario = async (req, res) => {
-  const { email, senha } = req.params;
-  try {
-    const [result] = await db.execute('Select * From usuarios WHERE email = ? and senha = ?', [email, senha]);
-    if (result.length > 0)
-      res.status(200).json(result);
-    else
-      res.status(404).json({ message: 'Usuário não autorizado' });
-  } catch (error) {
-    res.status(500).json({ message: 'Erro ao cadastrar usuário', error });
-  }
+    try {
+        const [resultConsulta] = await db.execute(
+            'SELECT * FROM usuarios WHERE email = ?', 
+            [email]
+        );
+
+        if (resultConsulta.length > 0) {
+            return res.status(409).json({ 
+                message: 'Usuário já cadastrado!',
+                id: resultConsulta[0].id 
+            });
+        }
+
+        const [result] = await db.execute(
+            'INSERT INTO usuarios (usuario, email, senha) VALUES (?, ?, ?)',
+            [usuario, email, senha]
+        );
+
+        res.status(201).json({ 
+            message: 'Usuário cadastrado com sucesso!',
+            id: result.insertId 
+        });
+
+    } catch (error) {
+        console.error('Erro no cadastro:', error);
+        res.status(500).json({ 
+            message: 'Erro interno ao cadastrar usuário',
+            error: process.env.NODE_ENV === 'development' ? error.message : {}
+        });
+    }
 };
